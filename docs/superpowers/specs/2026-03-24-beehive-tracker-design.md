@@ -43,15 +43,17 @@ Privacy is enforced at the database layer via Supabase Row Level Security (RLS).
 
 ## Data Model
 
-### `users`
-Managed by Supabase Auth. Extended with a `profiles` table for display name and avatar.
+### `profiles`
+Extends Supabase Auth users with display name and avatar. Created automatically on user signup via a database trigger.
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid | Primary key (from auth.users) |
+| id | uuid | PK, FK → auth.users ON DELETE CASCADE |
 | display_name | text | |
 | avatar_url | text | Optional |
 | created_at | timestamptz | |
+
+RLS policy: select public; insert/update restricted to `id = auth.uid()`.
 
 ### `locations`
 A named place where one or more hives are kept (e.g. home yard, a friend's farm).
@@ -59,10 +61,13 @@ A named place where one or more hives are kept (e.g. home yard, a friend's farm)
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid | Primary key |
-| user_id | uuid | FK → auth.users |
+| user_id | uuid | FK → auth.users ON DELETE CASCADE |
 | name | text | |
 | description | text | Optional |
 | created_at | timestamptz | |
+
+RLS policy: all operations restricted to `user_id = auth.uid()`.
+Delete behaviour: deleting a location cascades to all child hives.
 
 ### `hives`
 A single beehive at a location.
@@ -70,27 +75,30 @@ A single beehive at a location.
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid | Primary key |
-| location_id | uuid | FK → locations |
-| user_id | uuid | FK → auth.users (denormalised for RLS) |
+| location_id | uuid | FK → locations ON DELETE CASCADE |
+| user_id | uuid | FK → auth.users ON DELETE CASCADE — denormalised for RLS |
 | name | text | e.g. "Hive 1", "The Blue Box" |
-| is_public | boolean | Controls public visibility |
-| status | enum | `active`, `dead`, `sold` |
+| is_public | boolean | Controls public visibility, default false |
+| status | enum | `active`, `dead`, `sold` — default `active` |
 | species | text | Optional (e.g. Italian, Carniolan) |
 | installed_at | date | Optional |
 | created_at | timestamptz | |
 
-RLS policy: select allowed if `user_id = auth.uid()` OR `is_public = true`.
+RLS policy: select allowed if `user_id = auth.uid()` OR `is_public = true`. Insert/update/delete restricted to `user_id = auth.uid()`.
+Delete behaviour: deleting a hive cascades to all child inspections and notifications.
 
 ### `inspections`
 A logged visit to a hive. Combines structured quick-entry fields with freeform notes.
 
+In v1, only the hive owner can create, edit, or delete inspections — even on public hives. The `user_id` column is denormalised from the hive for RLS efficiency and will always equal `hives.user_id` in v1.
+
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid | Primary key |
-| hive_id | uuid | FK → hives |
-| user_id | uuid | FK → auth.users |
+| hive_id | uuid | FK → hives ON DELETE CASCADE |
+| user_id | uuid | FK → auth.users ON DELETE CASCADE — denormalised for RLS |
 | inspected_at | timestamptz | Defaults to now(), editable |
-| queen_seen | boolean | Nullable (not checked) |
+| queen_seen | boolean | Nullable (not checked = unknown) |
 | brood_pattern | enum | `good`, `fair`, `poor` — nullable |
 | population | enum | `strong`, `medium`, `weak` — nullable |
 | temperament | enum | `calm`, `moderate`, `aggressive` — nullable |
@@ -99,7 +107,8 @@ A logged visit to a hive. Combines structured quick-entry fields with freeform n
 | next_action | text | Reminder note for next visit — nullable |
 | created_at | timestamptz | |
 
-RLS policy: inherits hive visibility (join required). Mutations restricted to `user_id = auth.uid()`.
+RLS policy: select allowed when parent hive is owned by user OR `is_public = true` (policy joins to hives). Insert/update/delete restricted to `user_id = auth.uid()`.
+Delete behaviour: deleting an inspection cascades to all child photos and notifications referencing it.
 
 ### `inspection_photos`
 Photos attached to an inspection, stored in Supabase Storage.
@@ -107,9 +116,16 @@ Photos attached to an inspection, stored in Supabase Storage.
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid | Primary key |
-| inspection_id | uuid | FK → inspections |
+| inspection_id | uuid | FK → inspections ON DELETE CASCADE |
+| user_id | uuid | FK → auth.users ON DELETE CASCADE — denormalised for RLS |
 | storage_path | text | Path within Supabase Storage bucket |
 | created_at | timestamptz | |
+
+RLS policy: select allowed when parent inspection is visible (joins through inspections → hives using same public/owner logic). Insert/delete restricted to `user_id = auth.uid()`.
+
+**Storage bucket:** The `inspection-photos` bucket is **private**. Photos are served via short-lived signed URLs generated server-side at render time. This prevents direct access to photos from private hives even if a storage path is guessed.
+
+**Constraints:** Maximum 5 photos per inspection, enforced at the application layer before upload. Maximum file size 5 MB per photo. Accepted MIME types: `image/jpeg`, `image/png`, `image/heic`.
 
 ### `notifications`
 In-app notifications per user.
@@ -117,13 +133,14 @@ In-app notifications per user.
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid | Primary key |
-| user_id | uuid | FK → auth.users |
-| hive_id | uuid | FK → hives — nullable |
+| user_id | uuid | FK → auth.users ON DELETE CASCADE |
+| hive_id | uuid | FK → hives ON DELETE CASCADE — nullable |
+| type | text | Notification kind, e.g. `overdue_inspection` |
 | message | text | |
-| read | boolean | Defaults false |
+| read | boolean | Default false |
 | created_at | timestamptz | |
 
-RLS policy: select/update restricted to `user_id = auth.uid()`.
+RLS policy: select/update restricted to `user_id = auth.uid()`. Insert via server-side only (service role or server action using service role key).
 
 ---
 
@@ -134,21 +151,31 @@ RLS policy: select/update restricted to `user_id = auth.uid()`.
 - Google OAuth
 - Password reset flow
 - Protected routes redirect unauthenticated users to login
+- On signup, a `profiles` row is created via a Supabase database trigger
+
+### Dashboard (Home)
+The dashboard is the landing page after login. It shows a summary of the user's activity:
+- All locations listed, each showing its hives as cards
+- Each hive card shows the hive name, status, and days since last inspection
+- Hive cards with no inspection in 14+ days are visually flagged
+- Unread notification count in the nav
+
+The Locations nav item opens a dedicated locations management page (add/edit/delete locations, reorder). It is not the same as the dashboard.
 
 ### Locations
-- Create, edit, delete a location
-- List all locations on the dashboard
-- Each location shows its hives with last-inspection status
+- Create, edit, delete a location from the Locations page
+- Deleting a location requires confirmation; cascades to all child hives and their data
 
 ### Hives
-- Create, edit, delete a hive under a location
-- Public/private toggle — private hives only visible to the owner; public hives visible to anyone with the link
+- Create, edit, delete a hive from within a location
+- Public/private toggle — private hives (default) are only visible to the owner; public hives are visible to anyone with the link (no login required)
 - Hive status: active / dead / sold
 - Hive detail page shows all inspections in reverse-chronological order
-- Days-since-last-inspection shown on dashboard cards (highlights if > 14 days)
+- Deleting a hive requires confirmation; cascades to all child inspections and their photos
 
 ### Inspections
-- Add inspection from a hive detail page (or via the `+` shortcut in nav)
+- Add inspection from a hive detail page, or via the `+` nav button
+- `+` nav button flow: opens a hive picker modal showing all active hives grouped by location; selecting a hive opens the inspection form pre-populated with that hive
 - Structured fields — tap-to-select button groups (not dropdowns) for fast phone entry:
   - Queen seen: Yes / No
   - Brood pattern: Good / Fair / Poor
@@ -157,23 +184,25 @@ RLS policy: select/update restricted to `user_id = auth.uid()`.
   - Honey stores: Full / Partial / Low
 - All structured fields are optional — a beekeeper can log notes-only
 - Freeform notes (textarea)
-- Next action (single-line text — appears in notification system)
+- Next action (single-line text — displayed on hive detail, feeds notification system)
 - Date/time — defaults to now, editable
-- Photo upload — multiple photos per inspection, stored in Supabase Storage
-- View and edit past inspections
-- Delete an inspection
+- Photo upload — up to 5 photos per inspection (JPEG/PNG/HEIC, max 5 MB each), stored in Supabase Storage private bucket, served via signed URLs
+- View, edit, and delete past inspections; all fields are editable on existing inspections, including adding or removing photos
+- Only the hive owner can create, edit, or delete inspections (even on public hives)
 
 ### Notifications
 - Bell icon in nav with unread count badge
-- Notification list page
-- Notifications generated when a hive has not been inspected for 14 days (checked server-side on page load / via Supabase Edge Function cron)
+- Notification list page shows all notifications in reverse-chronological order
+- Notification type `overdue_inspection`: generated when an active hive has had no inspection in 14+ days
 - Tapping a notification marks it read and navigates to the hive
 - Mark all as read action
 
 ### Public Hive View
-- Shareable URL for public hives (no login required)
-- Shows hive info and inspection history (read-only)
-- Structured fields displayed as readable labels, not raw enums
+- URL pattern: `/hives/[hive_id]` — accessible without login for public hives
+- Unauthenticated users visiting a private hive URL receive a 404 (not a login redirect, to avoid leaking existence)
+- Shows hive info and full inspection history (read-only)
+- Structured fields displayed as readable labels (e.g. "Good" not "good")
+- No inspection form or edit controls visible
 
 ---
 
@@ -182,8 +211,8 @@ RLS policy: select/update restricted to `user_id = auth.uid()`.
 ### Mobile (bottom nav bar)
 - Home (dashboard)
 - Locations
-- `+` (centre — add inspection)
-- Notifications (with badge)
+- `+` (centre — opens hive picker, then inspection form)
+- Notifications (with unread badge)
 - Profile
 
 ### Desktop (left sidebar)
@@ -192,7 +221,7 @@ RLS policy: select/update restricted to `user_id = auth.uid()`.
 - Locations
 - Notifications
 - Profile
-- Add Inspection button
+- Add Inspection button (opens hive picker, then inspection form)
 
 ---
 
@@ -207,7 +236,7 @@ RLS policy: select/update restricted to `user_id = auth.uid()`.
 
 ## Notification Trigger Logic
 
-On each authenticated page load, a server action checks whether any of the user's active hives have no inspection in the past 14 days and creates a notification if one does not already exist for that hive in the past 24 hours. This avoids spam while keeping the system simple (no background workers required for v1).
+On each authenticated page load, a server action checks whether any of the user's active hives (`status = 'active'`) have no inspection in the past 14 days. For each qualifying hive, a notification of type `overdue_inspection` is created only if no `overdue_inspection` notification for that hive already exists with `created_at` in the past 24 hours. This prevents duplicate notifications while requiring no background worker or cron job in v1.
 
 ---
 
@@ -215,7 +244,10 @@ On each authenticated page load, a server action checks whether any of the user'
 
 - Vercel free tier (hobby plan) — auto-deploy from `main` branch
 - Supabase free tier — one active project
-- Environment variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- Environment variables:
+  - `NEXT_PUBLIC_SUPABASE_URL` — public, used in client and server
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — public, used in client components with RLS enforced
+  - `SUPABASE_SERVICE_ROLE_KEY` — **server-side only** (Server Actions, Route Handlers); bypasses RLS; never used in client components or passed to the browser; used only for the notification insert logic
 - `.env.local` for local development — never committed
 
 ---
