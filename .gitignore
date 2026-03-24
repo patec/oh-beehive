@@ -1,0 +1,27 @@
+# Environment
+.env
+.env.local
+.env*.local
+.envrc
+
+# Editor
+*~
+.DS_Store
+
+# Build output
+.next/
+out/
+bin/
+
+# Dependencies
+node_modules/
+
+# Supabase local
+supabase/.branches
+supabase/.temp
+
+# Visual companion / brainstorm sessions
+.superpowers/
+
+# Misc
+*.log
