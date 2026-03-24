@@ -16,3 +16,12 @@ create policy "photos_upload" on storage.objects for insert
 
 -- Storage RLS: allow reading photos via signed URLs (handled server-side)
 -- Objects are served via signed URLs only — no direct public select policy needed
+
+-- Allow authenticated users to read their own photos
+create policy "photos_read"
+  on storage.objects for select
+  to authenticated
+  using (
+    bucket_id = 'inspection-photos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
