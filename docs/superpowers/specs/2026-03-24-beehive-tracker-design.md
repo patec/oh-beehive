@@ -21,21 +21,22 @@ Oh Beehave is a multi-tenant SaaS web application for beekeepers to track their 
 - Offline / PWA mode
 - Map view for locations
 - Varroa mite count tracking
-- Harvest / weight logging
-
 ---
 
 ## Tech Stack
 
-| Layer | Choice | Reason |
-|---|---|---|
-| Frontend | Next.js 15 (App Router) | Server components, RSC, Vercel-native |
-| Hosting | Vercel | Free tier, zero-config Next.js deployment |
-| Database | Supabase PostgreSQL | Free tier, bundles auth + storage |
-| Auth | Supabase Auth | Email + Google OAuth, built-in session management |
-| File storage | Supabase Storage | Photo uploads, same platform |
-| Styling | Tailwind CSS + shadcn/ui | Mobile-first, accessible components |
-| Data access | Supabase JS client | Type-safe, server + client, RLS enforced |
+| Layer | Choice | Version | Reason |
+|---|---|---|---|
+| Frontend | Next.js (App Router) | 16.2.1 | Server components, RSC, Vercel-native |
+| Runtime | React | 19.2.4 | Latest stable, pairs with Next.js 16 |
+| Language | TypeScript | 6.0.2 | Latest stable |
+| Hosting | Vercel | — | Free tier, zero-config Next.js deployment |
+| Database | Supabase PostgreSQL | — | Free tier, bundles auth + storage |
+| Auth | Supabase Auth | — | Email + Google OAuth, built-in session management |
+| File storage | Supabase Storage | — | Photo uploads, same platform |
+| Styling | Tailwind CSS + shadcn/ui | 4.2.2 | Mobile-first, accessible components |
+| Data access | @supabase/supabase-js | 2.100.0 | Type-safe, server + client, RLS enforced |
+| SSR helpers | @supabase/ssr | 0.9.0 | Cookie-based auth for Next.js App Router |
 
 Privacy is enforced at the database layer via Supabase Row Level Security (RLS). Private hives are invisible to other users even if they know the URL — this is not application-layer filtering.
 
@@ -79,13 +80,31 @@ A single beehive at a location.
 | user_id | uuid | FK → auth.users ON DELETE CASCADE — denormalised for RLS |
 | name | text | e.g. "Hive 1", "The Blue Box" |
 | is_public | boolean | Controls public visibility, default false |
-| status | enum | `active`, `dead`, `sold` — default `active` |
+| status | text | `active`, `dead`, `sold` — enforced via CHECK constraint, default `active` |
 | species | text | Optional (e.g. Italian, Carniolan) |
 | installed_at | date | Optional |
 | created_at | timestamptz | |
 
 RLS policy: select allowed if `user_id = auth.uid()` OR `is_public = true`. Insert/update/delete restricted to `user_id = auth.uid()`.
-Delete behaviour: deleting a hive cascades to all child inspections and notifications.
+Delete behaviour: deleting a hive cascades to all child inspections, harvests, and notifications.
+
+### `harvests`
+A honey harvest event recorded against a hive. Independent of inspections — a beekeeper may harvest without doing a full inspection.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid | Primary key |
+| hive_id | uuid | FK → hives ON DELETE CASCADE |
+| user_id | uuid | FK → auth.users ON DELETE CASCADE — denormalised for RLS |
+| harvested_at | date | Date of harvest, defaults to today, editable |
+| weight_kg | numeric(8,3) | Harvest weight in kilograms — required |
+| notes | text | Optional freeform notes |
+| created_at | timestamptz | |
+
+RLS policy: select allowed when parent hive is owned by user OR `is_public = true` (policy joins to hives, same logic as inspections). Insert/update/delete restricted to `user_id = auth.uid()`.
+Delete behaviour: deleting a harvest is a hard delete with no child records.
+
+`harvested_at` is `date` (not `timestamptz`) because harvest precision is day-level — a beekeeper records which day they harvested, not the exact time.
 
 ### `inspections`
 A logged visit to a hive. Combines structured quick-entry fields with freeform notes.
@@ -99,16 +118,16 @@ In v1, only the hive owner can create, edit, or delete inspections — even on p
 | user_id | uuid | FK → auth.users ON DELETE CASCADE — denormalised for RLS |
 | inspected_at | timestamptz | Defaults to now(), editable |
 | queen_seen | boolean | Nullable (not checked = unknown) |
-| brood_pattern | enum | `good`, `fair`, `poor` — nullable |
-| population | enum | `strong`, `medium`, `weak` — nullable |
-| temperament | enum | `calm`, `moderate`, `aggressive` — nullable |
-| honey_stores | enum | `full`, `partial`, `low` — nullable |
+| brood_pattern | text | `good`, `fair`, `poor` — CHECK constraint, nullable |
+| population | text | `strong`, `medium`, `weak` — CHECK constraint, nullable |
+| temperament | text | `calm`, `moderate`, `aggressive` — CHECK constraint, nullable |
+| honey_stores | text | `full`, `partial`, `low` — CHECK constraint, nullable |
 | notes | text | Freeform — nullable |
 | next_action | text | Reminder note for next visit — nullable |
 | created_at | timestamptz | |
 
 RLS policy: select allowed when parent hive is owned by user OR `is_public = true` (policy joins to hives). Insert/update/delete restricted to `user_id = auth.uid()`.
-Delete behaviour: deleting an inspection cascades to all child photos and notifications referencing it.
+Delete behaviour: deleting an inspection cascades to child `inspection_photos` rows via FK. The corresponding Supabase Storage objects must be deleted explicitly in a server action before the DB row is deleted — storage and database have no automatic FK relationship. Notifications are not cascaded from inspection deletion; they cascade from hive deletion via `hive_id`.
 
 ### `inspection_photos`
 Photos attached to an inspection, stored in Supabase Storage.
@@ -125,6 +144,8 @@ RLS policy: select allowed when parent inspection is visible (joins through insp
 
 **Storage bucket:** The `inspection-photos` bucket is **private**. Photos are served via short-lived signed URLs generated server-side at render time. This prevents direct access to photos from private hives even if a storage path is guessed.
 
+**Storage cleanup:** When an inspection is deleted, the server action must first delete all associated storage objects from the `inspection-photos` bucket using the Supabase Storage API, then delete the `inspection_photos` rows, then delete the `inspections` row. The same cleanup applies when a hive is deleted (cascade from hive → inspections → photos requires explicit storage deletion in the server action before the hive row is removed from the DB).
+
 **Constraints:** Maximum 5 photos per inspection, enforced at the application layer before upload. Maximum file size 5 MB per photo. Accepted MIME types: `image/jpeg`, `image/png`, `image/heic`.
 
 ### `notifications`
@@ -140,7 +161,7 @@ In-app notifications per user.
 | read | boolean | Default false |
 | created_at | timestamptz | |
 
-RLS policy: select/update restricted to `user_id = auth.uid()`. Insert via server-side only (service role or server action using service role key).
+RLS policy: select/update restricted to `user_id = auth.uid()`. Insert performed server-side using `SUPABASE_SERVICE_ROLE_KEY` (which bypasses RLS for the insert only — select/update RLS still applies to all reads). See Notification Trigger Logic and Deployment sections.
 
 ---
 
@@ -170,8 +191,9 @@ The Locations nav item opens a dedicated locations management page (add/edit/del
 - Create, edit, delete a hive from within a location
 - Public/private toggle — private hives (default) are only visible to the owner; public hives are visible to anyone with the link (no login required)
 - Hive status: active / dead / sold
-- Hive detail page shows all inspections in reverse-chronological order
-- Deleting a hive requires confirmation; cascades to all child inspections and their photos
+- Hive detail page uses two tabs: **Inspections** and **Harvests** — each showing records in reverse-chronological order. Both the authenticated owner view and the public hive view use the same two-tab layout.
+- Hive detail page shows total cumulative harvest weight as a summary above the Harvests tab, computed via SQL aggregate (`SUM(weight_kg)`) at render time
+- Deleting a hive requires confirmation; cascades to all child inspections, harvests, and their photos
 
 ### Inspections
 - Add inspection from a hive detail page, or via the `+` nav button
@@ -190,6 +212,17 @@ The Locations nav item opens a dedicated locations management page (add/edit/del
 - View, edit, and delete past inspections; all fields are editable on existing inspections, including adding or removing photos
 - Only the hive owner can create, edit, or delete inspections (even on public hives)
 
+### Harvests
+- Add a harvest record from the hive detail page
+- Required field: weight in kg (numeric input)
+- Optional: date (defaults to today, editable), freeform notes
+- Harvest list displayed on the Harvests tab of the hive detail page in reverse-chronological order, showing date and weight
+- Hive detail page shows cumulative total harvest weight as a summary above the Harvests tab (SQL aggregate, computed at render time)
+- Harvests are only accessible from the hive detail page — there is no global add-harvest shortcut in the nav
+- Edit and delete individual harvest records; delete requires confirmation
+- Only the hive owner can create, edit, or delete harvests (even on public hives)
+- Weight is stored in kg; the UI displays kg with 3 decimal places (e.g. 2.450 kg)
+
 ### Notifications
 - Bell icon in nav with unread count badge
 - Notification list page shows all notifications in reverse-chronological order
@@ -200,9 +233,10 @@ The Locations nav item opens a dedicated locations management page (add/edit/del
 ### Public Hive View
 - URL pattern: `/hives/[hive_id]` — accessible without login for public hives
 - Unauthenticated users visiting a private hive URL receive a 404 (not a login redirect, to avoid leaking existence)
-- Shows hive info and full inspection history (read-only)
+- Shows hive info, full inspection history, and harvest records using the same two-tab layout as the owner view (read-only)
+- Shows cumulative harvest weight summary above the Harvests tab
 - Structured fields displayed as readable labels (e.g. "Good" not "good")
-- No inspection form or edit controls visible
+- No inspection form, harvest form, or edit controls visible
 
 ---
 
@@ -259,5 +293,5 @@ On each authenticated page load, a server action checks whether any of the user'
 - Club / organisation model (shared locations, member roles)
 - PWA / offline inspection logging with sync
 - Varroa mite count and treatment tracking
-- Harvest weight logging
+- User-selectable weight units (lbs / kg)
 - Map view for locations
