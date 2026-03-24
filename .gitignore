@@ -23,5 +23,8 @@ supabase/.temp
 # Visual companion / brainstorm sessions
 .superpowers/
 
+# Git worktrees
+.worktrees/
+
 # Misc
 *.log
