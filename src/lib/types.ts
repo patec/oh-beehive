@@ -8,7 +8,7 @@ export type Database = {
       hives: { Row: Hive; Insert: HiveInsert; Update: HiveUpdate }
       harvests: { Row: Harvest; Insert: HarvestInsert; Update: HarvestUpdate }
       inspections: { Row: Inspection; Insert: InspectionInsert; Update: InspectionUpdate }
-      inspection_photos: { Row: InspectionPhoto; Insert: InspectionPhotoInsert; Update: InspectionPhotoInsert }
+      inspection_photos: { Row: InspectionPhoto; Insert: InspectionPhotoInsert; Update: InspectionPhotoUpdate }
       notifications: { Row: Notification; Insert: NotificationInsert; Update: NotificationUpdate }
     }
   }
@@ -70,6 +70,7 @@ export type InspectionPhoto = {
   id: string; inspection_id: string; user_id: string; storage_path: string; created_at: string
 }
 export type InspectionPhotoInsert = Pick<InspectionPhoto, 'inspection_id' | 'user_id' | 'storage_path'>
+export type InspectionPhotoUpdate = Partial<Pick<InspectionPhoto, 'storage_path'>>
 
 export type Notification = {
   id: string; user_id: string; hive_id: string | null
