@@ -10,6 +10,6 @@ export default defineConfig({
     globals: true,
   },
   resolve: {
-    alias: { '@': resolve(__dirname, '.') },
+    alias: { '@': resolve(__dirname, 'src') },
   },
 })
