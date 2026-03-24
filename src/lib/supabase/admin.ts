@@ -1,7 +1,8 @@
+import 'server-only'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/types'
 
-// Server-side only. Bypasses RLS. Never import in client components.
+// Bypasses RLS. The server-only import above causes a build error if this is ever bundled client-side.
 export function createAdminClient() {
   return createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

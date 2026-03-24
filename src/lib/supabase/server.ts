@@ -15,7 +15,10 @@ export async function createClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
-          } catch {}
+          } catch {
+            // Server Components have a read-only cookie store; setAll throws there.
+            // Route Handlers and Server Actions can set cookies normally.
+          }
         },
       },
     }
