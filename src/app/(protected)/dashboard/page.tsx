@@ -16,7 +16,6 @@ export default async function DashboardPage() {
         .order('inspected_at', { ascending: false }) as unknown as Promise<{ data: InspectionRow[] | null }>)
     : { data: [] as InspectionRow[] }
 
-  // Keep only the most recent inspection per hive (rows are already ordered descending)
   const lastByHive: Record<string, InspectionRow> = {}
   for (const inspection of allInspections ?? []) {
     if (!lastByHive[inspection.hive_id]) lastByHive[inspection.hive_id] = inspection
@@ -26,7 +25,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-6">
-      <h1 className="text-xl font-semibold">Dashboard</h1>
+      <div>
+        <h1 className="text-xl font-semibold">Dashboard</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Groovy, baby! Here&apos;s what&apos;s buzzing.</p>
+      </div>
       {typedLocations?.map(loc => (
         <div key={loc.id}>
           <div className="flex items-center justify-between mb-2">
@@ -37,11 +39,19 @@ export default async function DashboardPage() {
             {loc.hives.map(hive => (
               <HiveCard key={hive.id} hive={hive} lastInspection={lastByHive[hive.id] ?? null} />
             ))}
+            {!loc.hives.length && (
+              <p className="text-sm text-muted-foreground px-3 py-4 border rounded-lg border-dashed text-center">
+                No hives here yet, baby. Add one and let&apos;s get shagging!
+              </p>
+            )}
           </div>
         </div>
       ))}
       {!typedLocations?.length && (
-        <p className="text-muted-foreground">No locations yet. Add one in Locations.</p>
+        <div className="text-center py-12 space-y-3">
+          <p className="text-4xl font-black text-amber-400">One MILLION bees!</p>
+          <p className="text-muted-foreground">Well, not yet baby. Head to <strong>Locations</strong> to set up your groovy hive operation.</p>
+        </div>
       )}
     </div>
   )

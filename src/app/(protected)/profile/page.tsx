@@ -14,7 +14,10 @@ export default async function ProfilePage() {
 
   return (
     <div className="p-4 max-w-sm mx-auto space-y-6">
-      <h1 className="text-xl font-semibold">Profile</h1>
+      <div>
+        <h1 className="text-xl font-semibold">Profile</h1>
+        <p className="text-xs text-muted-foreground mt-0.5">Allow myself to introduce... myself.</p>
+      </div>
       <div className="space-y-4">
         <div>
           <p className="text-sm text-muted-foreground">Display name</p>
@@ -26,7 +29,7 @@ export default async function ProfilePage() {
         </div>
       </div>
       <form action={handleSignOut}>
-        <Button variant="outline" type="submit" className="w-full">Sign out</Button>
+        <Button variant="outline" type="submit" className="w-full">Cheerio, baby!</Button>
       </form>
     </div>
   )

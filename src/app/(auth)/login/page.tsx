@@ -1,5 +1,6 @@
 'use client'
 import { useActionState } from 'react'
+import Image from 'next/image'
 import { signIn, handleSignInWithGoogle } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,10 +11,22 @@ export default function LoginPage() {
   const [state, action, pending] = useActionState<{ error?: string }, FormData>(signIn, {})
   return (
     <div className="min-h-screen flex items-center justify-center bg-amber-50 p-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-1">
-          <div className="text-5xl font-black tracking-tight text-amber-500">Oh Beehive</div>
-          <p className="text-sm text-muted-foreground">Track your hives, harvest your data</p>
+      <div className="w-full max-w-sm space-y-5">
+        <div className="text-center space-y-3">
+          <Image
+            src="/oh-beehive.jpg"
+            alt="Oh Beehive mascot"
+            width={180}
+            height={180}
+            className="mx-auto rounded-2xl shadow-md"
+            priority
+          />
+          <div>
+            <h1 className="text-3xl font-black text-amber-500 tracking-tight">Oh Beehive!</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Yeah, baby! Your hives are waiting. Do they make you buzz?
+            </p>
+          </div>
         </div>
         <div className="bg-white rounded-2xl shadow-sm border p-6 space-y-4">
           <form action={handleSignInWithGoogle}>
@@ -44,13 +57,18 @@ export default function LoginPage() {
               <Input id="password" name="password" type="password" required />
             </div>
             <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? 'Signing in\u2026' : 'Sign in'}
+              {pending ? 'Shaggin\u2019 in\u2026' : 'Sign in, baby!'}
             </Button>
           </form>
         </div>
-        <p className="text-sm text-center text-muted-foreground">
-          No account? <Link href="/signup" className="underline">Sign up</Link>
-        </p>
+        <div className="text-center space-y-1">
+          <p className="text-sm text-muted-foreground">
+            No account? <Link href="/signup" className="underline font-medium">Join the hive, baby!</Link>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            <Link href="/reset-password" className="underline">Forgot password?</Link>
+          </p>
+        </div>
       </div>
     </div>
   )

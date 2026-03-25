@@ -15,7 +15,10 @@ export default async function NotificationsPage() {
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Notifications</h1>
+        <div>
+          <h1 className="text-xl font-semibold">Notifications</h1>
+          <p className="text-xs text-muted-foreground">Danger, baby! Your hives are trying to tell you something.</p>
+        </div>
         {notifications?.some(n => !n.read) && (
           <form action={markAllNotificationsRead}>
             <Button variant="ghost" size="sm" type="submit">Mark all read</Button>
@@ -27,7 +30,7 @@ export default async function NotificationsPage() {
           <NotificationItem key={n.id} notification={n} />
         ))}
         {!notifications?.length && (
-          <p className="text-muted-foreground text-sm">No notifications.</p>
+          <p className="text-muted-foreground text-sm">All clear, baby! You&apos;re as free as a shagadelic spy. No notifications.</p>
         )}
       </ul>
     </div>
