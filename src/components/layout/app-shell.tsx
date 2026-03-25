@@ -1,5 +1,6 @@
 import { MobileNav } from './mobile-nav'
 import { DesktopSidebar } from './desktop-sidebar'
+import { RecordButton } from '@/components/voice/record-button'
 
 export function AppShell({ children, unreadCount }: { children: React.ReactNode; unreadCount: number }) {
   return (
@@ -9,6 +10,7 @@ export function AppShell({ children, unreadCount }: { children: React.ReactNode;
       <div className="md:hidden">
         <MobileNav unreadCount={unreadCount} />
       </div>
+      <RecordButton />
     </div>
   )
 }
