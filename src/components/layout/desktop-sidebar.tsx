@@ -26,7 +26,7 @@ export function DesktopSidebar({ unreadCount }: { unreadCount: number }) {
           <Bell size={18} /> Notifications
           {unreadCount > 0 && (
             <span className="ml-auto text-xs bg-destructive text-destructive-foreground rounded-full px-1.5">
-              {unreadCount}
+              {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
         </Link>
