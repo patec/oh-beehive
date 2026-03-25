@@ -45,6 +45,32 @@ describe('createHarvest', () => {
   })
 })
 
+describe('updateHarvest', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetUser.mockReturnValue({ data: { user: { id: 'user-1' } } })
+  })
+
+  it('returns error when unauthenticated', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: null } } as never)
+    const { updateHarvest } = await import('@/lib/actions/harvests')
+    const form = new FormData()
+    form.set('id', 'harvest-1')
+    form.set('weight_kg', '2.0')
+    const result = await updateHarvest({}, form)
+    expect(result?.error).toBe('Unauthorized')
+  })
+
+  it('returns error when weight_kg is negative', async () => {
+    const { updateHarvest } = await import('@/lib/actions/harvests')
+    const form = new FormData()
+    form.set('id', 'harvest-1')
+    form.set('weight_kg', '-5')
+    const result = await updateHarvest({}, form)
+    expect(result?.error).toBeDefined()
+  })
+})
+
 describe('deleteHarvest', () => {
   beforeEach(() => {
     vi.clearAllMocks()

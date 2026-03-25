@@ -47,6 +47,45 @@ describe('createInspection', () => {
     const result = await createInspection({}, form)
     expect(result?.error).toBeDefined()
   })
+
+  it('returns warning when a photo has a disallowed MIME type', async () => {
+    mockFrom.mockReturnValue({
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: { id: 'insp-1', hive_id: 'hive-1' }, error: null })
+        })
+      }),
+    })
+    const { createInspection } = await import('@/lib/actions/inspections')
+    const form = new FormData()
+    form.set('hive_id', 'hive-1')
+    form.append('photos', new File(['x'], 'test.gif', { type: 'image/gif' }))
+    const result = await createInspection({}, form)
+    expect(result?.warning).toMatch(/1 photo\(s\) were skipped/)
+  })
+})
+
+describe('updateInspection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetUser.mockReturnValue({ data: { user: { id: 'user-1' } } })
+  })
+
+  it('returns error when unauthenticated', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: null } } as never)
+    const { updateInspection } = await import('@/lib/actions/inspections')
+    const form = new FormData()
+    form.set('id', 'insp-1')
+    const result = await updateInspection({}, form)
+    expect(result?.error).toBe('Unauthorized')
+  })
+
+  it('returns error when id is missing from FormData', async () => {
+    const { updateInspection } = await import('@/lib/actions/inspections')
+    const form = new FormData()
+    const result = await updateInspection({}, form)
+    expect(result?.error).toBeDefined()
+  })
 })
 
 describe('deleteInspection', () => {
