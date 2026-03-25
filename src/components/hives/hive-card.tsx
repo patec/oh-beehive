@@ -3,16 +3,22 @@ import type { Hive } from '@/lib/types'
 
 type Props = { hive: Hive; lastInspection: { inspected_at: string } | null }
 
-const STATUS_STYLE: Record<string, string> = {
-  active: 'bg-amber-100 text-amber-800',
-  dead: 'bg-red-100 text-red-800',
-  sold: 'bg-gray-100 text-gray-600',
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  active: 'Groovy',
-  dead: 'Not groovy',
-  sold: 'Sold, baby',
+const STATUS_CONFIG: Record<string, { label: string; badge: string; border: string }> = {
+  active: {
+    label: 'Groovy',
+    badge: 'bg-amber-100 text-amber-800 border border-amber-300',
+    border: 'border-l-amber-400',
+  },
+  dead: {
+    label: 'Not groovy',
+    badge: 'bg-red-100 text-red-700 border border-red-200',
+    border: 'border-l-red-400',
+  },
+  sold: {
+    label: 'Sold, baby',
+    badge: 'bg-gray-100 text-gray-600 border border-gray-200',
+    border: 'border-l-gray-300',
+  },
 }
 
 export function HiveCard({ hive, lastInspection }: Props) {
@@ -30,15 +36,23 @@ export function HiveCard({ hive, lastInspection }: Props) {
     inspectionText = `Inspected ${daysSince}d ago. Shagadelic!`
   }
 
+  const config = STATUS_CONFIG[hive.status] ?? STATUS_CONFIG.sold
+
   return (
-    <Link href={`/hives/${hive.id}`} className="block p-3 border rounded-lg hover:bg-accent transition-colors">
-      <div className="flex items-center justify-between">
-        <span className="font-medium">{hive.name}</span>
-        <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLE[hive.status] ?? STATUS_STYLE.sold}`}>
-          {STATUS_LABEL[hive.status] ?? hive.status}
+    <Link
+      href={`/hives/${hive.id}`}
+      className={`block bg-card border border-l-4 ${config.border} rounded-xl p-4 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-150 group`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-bold text-foreground group-hover:text-amber-700 transition-colors">{hive.name}</span>
+        <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold whitespace-nowrap ${config.badge}`}>
+          {config.label}
         </span>
       </div>
-      <p className={`text-sm mt-1 ${overdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+      {hive.species && (
+        <p className="text-xs text-muted-foreground mt-0.5 capitalize">{hive.species}</p>
+      )}
+      <p className={`text-sm mt-1.5 font-medium ${overdue ? 'text-red-600' : 'text-amber-700/80'}`}>
         {inspectionText}
       </p>
     </Link>

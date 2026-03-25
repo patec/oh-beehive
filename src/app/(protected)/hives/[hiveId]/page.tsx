@@ -50,9 +50,9 @@ export default async function HiveDetailPage({ params }: { params: Promise<{ hiv
   const totalHarvestKg = harvests.reduce((sum, h) => sum + Number(h.weight_kg), 0)
 
   return (
-    <div className="p-4 max-w-2xl mx-auto space-y-6">
-      <nav className="flex items-center gap-1 text-sm text-muted-foreground">
-        <Link href="/hives" className="hover:text-foreground transition-colors">Hives</Link>
+    <div className="p-6 max-w-2xl mx-auto space-y-6">
+      <nav className="flex items-center gap-1 text-sm text-muted-foreground font-semibold">
+        <Link href="/hives" className="hover:text-amber-700 transition-colors">Hives</Link>
         {location && (
           <>
             <ChevronRight size={14} />
@@ -60,12 +60,12 @@ export default async function HiveDetailPage({ params }: { params: Promise<{ hiv
           </>
         )}
         <ChevronRight size={14} />
-        <span className="text-foreground font-medium">{hive.name}</span>
+        <span className="text-amber-700">{hive.name}</span>
       </nav>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl px-5 py-4 shadow-sm">
         <div>
-          <h1 className="text-xl font-semibold">{hive.name}</h1>
-          <p className="text-sm text-muted-foreground capitalize">
+          <h1 className="text-2xl font-black text-amber-800">{hive.name}</h1>
+          <p className="text-sm text-amber-700/70 font-semibold capitalize mt-0.5">
             {hive.status}{hive.species ? ` \u00b7 ${hive.species}` : ''}
           </p>
         </div>
