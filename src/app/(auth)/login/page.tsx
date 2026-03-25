@@ -16,8 +16,8 @@ export default function LoginPage() {
           <Image
             src="/oh-beehive.jpg"
             alt="Oh Beehive mascot"
-            width={180}
-            height={180}
+            width={280}
+            height={280}
             className="mx-auto rounded-2xl shadow-md"
             priority
           />

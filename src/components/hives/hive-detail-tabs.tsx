@@ -2,10 +2,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { InspectionCard } from '@/components/inspections/inspection-card'
 import { HarvestCard } from '@/components/harvests/harvest-card'
-import type { InspectionWithPhotos, Harvest } from '@/lib/types'
+import type { InspectionWithPhotosAndUrls, Harvest } from '@/lib/types'
 
 type Props = {
-  inspections: InspectionWithPhotos[]
+  inspections: InspectionWithPhotosAndUrls[]
   harvests: Harvest[]
   hiveId: string
   totalHarvestKg: number

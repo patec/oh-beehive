@@ -4,9 +4,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button'
 import { deleteInspection } from '@/lib/actions/inspections'
 import { InspectionForm } from './inspection-form'
-import type { InspectionWithPhotos } from '@/lib/types'
+import { PhotoCarousel } from './photo-carousel'
+import type { InspectionWithPhotosAndUrls } from '@/lib/types'
 
-export function InspectionCard({ inspection, hiveId, isOwner }: { inspection: InspectionWithPhotos; hiveId: string; isOwner: boolean }) {
+export function InspectionCard({ inspection, hiveId, isOwner }: { inspection: InspectionWithPhotosAndUrls; hiveId: string; isOwner: boolean }) {
   const [editOpen, setEditOpen] = useState(false)
   const fields: [string, string | null][] = [
     ['Queen', inspection.queen_seen === null ? null : inspection.queen_seen ? 'Yes' : 'No'],
@@ -15,6 +16,8 @@ export function InspectionCard({ inspection, hiveId, isOwner }: { inspection: In
     ['Temperament', inspection.temperament],
     ['Honey', inspection.honey_stores],
   ]
+  const photosWithUrls = (inspection.inspection_photos ?? []).filter(p => p.signedUrl)
+
   return (
     <div className="border rounded-lg p-4 space-y-3">
       <p className="text-sm text-muted-foreground">
@@ -31,9 +34,7 @@ export function InspectionCard({ inspection, hiveId, isOwner }: { inspection: In
       {inspection.next_action && (
         <p className="text-sm text-muted-foreground">Next: {inspection.next_action}</p>
       )}
-      {inspection.inspection_photos && inspection.inspection_photos.length > 0 && (
-        <p className="text-xs text-muted-foreground">{inspection.inspection_photos.length} photo(s) attached</p>
-      )}
+      {photosWithUrls.length > 0 && <PhotoCarousel photos={photosWithUrls} />}
       {isOwner && (
         <div className="flex gap-1 pt-1">
           <Dialog open={editOpen} onOpenChange={setEditOpen}>

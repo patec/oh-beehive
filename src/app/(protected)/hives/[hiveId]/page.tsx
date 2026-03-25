@@ -5,7 +5,7 @@ import { AutoOpenInspectionDialog } from '@/components/hives/auto-open-inspectio
 import { HarvestForm } from '@/components/harvests/harvest-form'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import type { Hive, InspectionWithPhotos, Harvest } from '@/lib/types'
+import type { Hive, InspectionWithPhotos, InspectionWithPhotosAndUrls, Harvest } from '@/lib/types'
 
 export default async function HiveDetailPage({ params }: { params: Promise<{ hiveId: string }> }) {
   const { hiveId } = await params
@@ -13,7 +13,6 @@ export default async function HiveDetailPage({ params }: { params: Promise<{ hiv
   const { data: { user } } = await supabase.auth.getUser()
 
   const { data: hiveRaw } = await (supabase.from('hives').select('*').eq('id', hiveId).single() as unknown as Promise<{ data: Hive | null }>)
-  // RLS returns null for private hives when unauthenticated
   if (!hiveRaw) notFound()
   const hive = hiveRaw
   if (!hive.is_public && hive.user_id !== user?.id) notFound()
@@ -25,7 +24,24 @@ export default async function HiveDetailPage({ params }: { params: Promise<{ hiv
     supabase.from('harvests').select('*').eq('hive_id', hive.id).order('harvested_at', { ascending: false }) as unknown as Promise<{ data: Harvest[] | null }>,
   ])
 
-  const inspections = inspectionsRaw ?? []
+  // Generate signed URLs for all photos in one batch
+  const allPaths = (inspectionsRaw ?? []).flatMap(i => (i.inspection_photos ?? []).map(p => p.storage_path))
+  const signedUrlMap: Record<string, string> = {}
+  if (allPaths.length > 0) {
+    const { data: signed } = await supabase.storage.from('inspection-photos').createSignedUrls(allPaths, 3600)
+    for (const entry of signed ?? []) {
+      if (entry.path) signedUrlMap[entry.path] = entry.signedUrl
+    }
+  }
+
+  const inspections: InspectionWithPhotosAndUrls[] = (inspectionsRaw ?? []).map(i => ({
+    ...i,
+    inspection_photos: (i.inspection_photos ?? []).map(p => ({
+      ...p,
+      signedUrl: signedUrlMap[p.storage_path] ?? '',
+    })),
+  }))
+
   const harvests = harvestsRaw ?? []
   const totalHarvestKg = harvests.reduce((sum, h) => sum + Number(h.weight_kg), 0)
 
