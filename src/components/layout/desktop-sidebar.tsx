@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Home, MapPin, Bell, LogOut, Plus } from 'lucide-react'
+import { Home, MapPin, Bell, LogOut, Plus, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { HivePickerModal } from '@/components/hives/hive-picker-modal'
@@ -29,6 +29,9 @@ export function DesktopSidebar({ unreadCount }: { unreadCount: number }) {
         </div>
         <Link href="/dashboard" className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${active('/dashboard')}`}>
           <Home size={16} /> Dashboard
+        </Link>
+        <Link href="/hives" className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${active('/hives')}`}>
+          <Layers size={16} /> Hives
         </Link>
         <Link href="/locations" className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${active('/locations')}`}>
           <MapPin size={16} /> Locations

@@ -1,11 +1,13 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { HiveDetailTabs } from '@/components/hives/hive-detail-tabs'
 import { AutoOpenInspectionDialog } from '@/components/hives/auto-open-inspection-dialog'
 import { HarvestForm } from '@/components/harvests/harvest-form'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import type { Hive, InspectionWithPhotos, InspectionWithPhotosAndUrls, Harvest } from '@/lib/types'
+import type { Hive, Location, InspectionWithPhotos, InspectionWithPhotosAndUrls, Harvest } from '@/lib/types'
 
 export default async function HiveDetailPage({ params }: { params: Promise<{ hiveId: string }> }) {
   const { hiveId } = await params
@@ -16,6 +18,8 @@ export default async function HiveDetailPage({ params }: { params: Promise<{ hiv
   if (!hiveRaw) notFound()
   const hive = hiveRaw
   if (!hive.is_public && hive.user_id !== user?.id) notFound()
+
+  const { data: location } = await (supabase.from('locations').select('id, name').eq('id', hive.location_id).single() as unknown as Promise<{ data: Pick<Location, 'id' | 'name'> | null }>)
 
   const isOwner = user?.id === hive.user_id
 
@@ -47,6 +51,17 @@ export default async function HiveDetailPage({ params }: { params: Promise<{ hiv
 
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-6">
+      <nav className="flex items-center gap-1 text-sm text-muted-foreground">
+        <Link href="/hives" className="hover:text-foreground transition-colors">Hives</Link>
+        {location && (
+          <>
+            <ChevronRight size={14} />
+            <span>{location.name}</span>
+          </>
+        )}
+        <ChevronRight size={14} />
+        <span className="text-foreground font-medium">{hive.name}</span>
+      </nav>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">{hive.name}</h1>
