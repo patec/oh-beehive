@@ -2,10 +2,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { InspectionCard } from '@/components/inspections/inspection-card'
 import { HarvestCard } from '@/components/harvests/harvest-card'
-import type { Inspection, Harvest } from '@/lib/types'
+import type { InspectionWithPhotos, Harvest } from '@/lib/types'
 
 type Props = {
-  inspections: Inspection[]
+  inspections: InspectionWithPhotos[]
   harvests: Harvest[]
   hiveId: string
   totalHarvestKg: number
@@ -20,7 +20,7 @@ export function HiveDetailTabs({ inspections, harvests, hiveId, totalHarvestKg, 
         <TabsTrigger value="harvests" className="flex-1">Harvests ({harvests.length})</TabsTrigger>
       </TabsList>
       <TabsContent value="inspections" className="space-y-3 mt-4">
-        {inspections.map(i => <InspectionCard key={i.id} inspection={i} />)}
+        {inspections.map(i => <InspectionCard key={i.id} inspection={i} hiveId={hiveId} isOwner={isOwner} />)}
         {!inspections.length && <p className="text-muted-foreground text-sm">No inspections yet.</p>}
       </TabsContent>
       <TabsContent value="harvests" className="space-y-3 mt-4">

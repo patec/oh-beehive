@@ -50,6 +50,9 @@ export async function updateHarvest(_: { error?: string }, formData: FormData) {
 
 export async function deleteHarvest(harvestId: string, hiveId: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
   const { error } = await supabase.from('harvests').delete().eq('id', harvestId)
   if (error) return { error: error.message }
   revalidatePath(`/hives/${hiveId}`)

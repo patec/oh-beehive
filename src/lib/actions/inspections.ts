@@ -27,7 +27,8 @@ export async function createInspection(_: { error?: string }, formData: FormData
 
   // Upload photos (max 5, max 5 MB each, JPEG/PNG/HEIC only)
   const photos = formData.getAll('photos') as File[]
-  const validPhotos = photos.filter(f => f.size > 0 && f.size <= 5 * 1024 * 1024)
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/heic']
+  const validPhotos = photos.filter(f => f.size > 0 && f.size <= 5 * 1024 * 1024 && allowedTypes.includes(f.type))
   if (validPhotos.length > 5) return { error: 'Maximum 5 photos per inspection' }
 
   for (const photo of validPhotos) {
@@ -42,7 +43,8 @@ export async function createInspection(_: { error?: string }, formData: FormData
   }
 
   revalidatePath(`/hives/${hiveId}`)
-  return {}
+  const skippedCount = photos.filter(f => f.size > 0).length - validPhotos.length
+  return skippedCount > 0 ? { warning: `${skippedCount} photo(s) were skipped (must be JPEG/PNG/HEIC, max 5 MB each).` } : {}
 }
 
 export async function updateInspection(_: { error?: string }, formData: FormData) {
@@ -70,7 +72,8 @@ export async function updateInspection(_: { error?: string }, formData: FormData
 
   // Upload any new photos added during edit
   const photos = formData.getAll('photos') as File[]
-  const validPhotos = photos.filter(f => f.size > 0 && f.size <= 5 * 1024 * 1024)
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/heic']
+  const validPhotos = photos.filter(f => f.size > 0 && f.size <= 5 * 1024 * 1024 && allowedTypes.includes(f.type))
   const { count: existingCount } = await (supabase
     .from('inspection_photos') as any).select('*', { count: 'exact', head: true }).eq('inspection_id', id)
   if ((existingCount ?? 0) + validPhotos.length > 5) return { error: 'Maximum 5 photos per inspection' }
@@ -87,11 +90,14 @@ export async function updateInspection(_: { error?: string }, formData: FormData
   }
 
   if (existing) revalidatePath(`/hives/${existing.hive_id}`)
-  return {}
+  const skippedCount = photos.filter(f => f.size > 0).length - validPhotos.length
+  return skippedCount > 0 ? { warning: `${skippedCount} photo(s) were skipped (must be JPEG/PNG/HEIC, max 5 MB each).` } : {}
 }
 
 export async function deleteInspection(inspectionId: string, hiveId: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
 
   const { data: photos } = await (supabase.from('inspection_photos') as any).select('storage_path').eq('inspection_id', inspectionId)
   if (photos?.length) {
@@ -107,9 +113,16 @@ export async function deleteInspection(inspectionId: string, hiveId: string) {
 
 export async function deleteInspectionPhoto(photoId: string, storagePath: string, hiveId: string) {
   const supabase = await createClient()
-  const { error: storageError } = await supabase.storage.from('inspection-photos').remove([storagePath])
-  if (storageError) return { error: storageError.message }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  // Delete DB row first — an orphaned DB row pointing at a missing file is worse than
+  // an unreferenced storage object.
   const { error } = await supabase.from('inspection_photos').delete().eq('id', photoId)
   if (error) return { error: error.message }
+
+  // Best-effort storage cleanup; failure leaves an unreferenced object, which is acceptable.
+  await supabase.storage.from('inspection-photos').remove([storagePath])
   revalidatePath(`/hives/${hiveId}`)
+  return {}
 }

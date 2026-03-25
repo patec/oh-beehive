@@ -5,9 +5,7 @@ import { AutoOpenInspectionDialog } from '@/components/hives/auto-open-inspectio
 import { HarvestForm } from '@/components/harvests/harvest-form'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import type { Hive, Inspection, Harvest, InspectionPhoto } from '@/lib/types'
-
-type InspectionWithPhotos = Inspection & { inspection_photos: InspectionPhoto[] }
+import type { Hive, InspectionWithPhotos, Harvest } from '@/lib/types'
 
 export default async function HiveDetailPage({ params }: { params: Promise<{ hiveId: string }> }) {
   const { hiveId } = await params

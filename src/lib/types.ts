@@ -69,6 +69,7 @@ export type InspectionUpdate = Partial<Omit<InspectionInsert, 'hive_id'>>
 export type InspectionPhoto = {
   id: string; inspection_id: string; user_id: string; storage_path: string; created_at: string
 }
+export type InspectionWithPhotos = Inspection & { inspection_photos?: InspectionPhoto[] }
 export type InspectionPhotoInsert = Pick<InspectionPhoto, 'inspection_id' | 'user_id' | 'storage_path'>
 export type InspectionPhotoUpdate = Partial<Pick<InspectionPhoto, 'storage_path'>>
 
