@@ -41,6 +41,7 @@ export async function updateLocation(_: { error?: string }, formData: FormData) 
   if (error) return { error: error.message }
   revalidatePath('/locations')
   revalidatePath('/dashboard')
+  return {}
 }
 
 export async function deleteLocation(id: string) {

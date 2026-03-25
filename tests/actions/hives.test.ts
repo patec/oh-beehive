@@ -6,6 +6,8 @@ vi.mock('next/headers', () => ({ cookies: vi.fn(() => ({ getAll: vi.fn(() => [])
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 
 describe('createHive', () => {
+  beforeEach(() => vi.clearAllMocks())
+
   it('returns error if location_id missing', async () => {
     const { createHive } = await import('@/lib/actions/hives')
     const form = new FormData()

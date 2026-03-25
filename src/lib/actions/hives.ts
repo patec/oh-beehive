@@ -61,9 +61,10 @@ export async function deleteHive(hiveId: string) {
     )
 
   if (photos?.length) {
-    await supabase.storage.from('inspection-photos').remove(
-      (photos as Array<{ storage_path: string }>).map(p => p.storage_path)
-    )
+    const { error: storageError } = await supabase.storage
+      .from('inspection-photos')
+      .remove((photos as Array<{ storage_path: string }>).map(p => p.storage_path))
+    if (storageError) return { error: storageError.message }
   }
 
   const { error } = await supabase.from('hives').delete().eq('id', hiveId)
