@@ -51,8 +51,9 @@ export async function deleteHive(hiveId: string) {
   const supabase = await createClient()
 
   // Fetch photo storage paths before cascade delete removes the DB rows
-  const { data: photos } = await supabase
-    .from('inspection_photos')
+  // Cast through any to work around narrow Insert types on the generated DB schema
+  const photoTable = supabase.from('inspection_photos') as any
+  const { data: photos } = await photoTable
     .select('storage_path')
     .in(
       'inspection_id',
@@ -60,7 +61,9 @@ export async function deleteHive(hiveId: string) {
     )
 
   if (photos?.length) {
-    await supabase.storage.from('inspection-photos').remove(photos.map(p => p.storage_path))
+    await supabase.storage.from('inspection-photos').remove(
+      (photos as Array<{ storage_path: string }>).map(p => p.storage_path)
+    )
   }
 
   const { error } = await supabase.from('hives').delete().eq('id', hiveId)
