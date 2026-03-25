@@ -41,3 +41,24 @@ export async function signOut() {
   if (error) return { error: error.message }
   redirect('/login')
 }
+
+export async function signInWithGoogle() {
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+    },
+  })
+  if (error || !data.url) return { error: error?.message ?? 'Could not initiate Google sign-in.' }
+  redirect(data.url)
+}
+
+// Void wrappers for use as form actions (which require void return type)
+export async function handleSignInWithGoogle(): Promise<void> {
+  await signInWithGoogle()
+}
+
+export async function handleSignOut(): Promise<void> {
+  await signOut()
+}
