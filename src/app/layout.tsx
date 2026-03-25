@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Oh Beehave",
+  title: "Oh Beehive",
   description: "Track your beehives",
 };
 

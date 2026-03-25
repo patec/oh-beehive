@@ -11,7 +11,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-6">
-        <h1 className="text-2xl font-bold text-center">Oh Beehave</h1>
+        <h1 className="text-2xl font-bold text-center">Oh Beehive</h1>
         <form action={action} className="space-y-4">
           {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
           <div className="space-y-2">

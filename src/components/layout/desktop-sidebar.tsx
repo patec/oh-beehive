@@ -15,7 +15,7 @@ export function DesktopSidebar({ unreadCount }: { unreadCount: number }) {
   return (
     <>
       <aside className="hidden md:flex flex-col w-56 border-r h-screen sticky top-0 p-4 gap-1">
-        <span className="font-bold text-lg mb-4 px-2">Oh Beehave</span>
+        <span className="font-bold text-lg mb-4 px-2">Oh Beehive</span>
         <Link href="/dashboard" className={`flex items-center gap-2 px-2 py-2 rounded-md text-sm ${active('/dashboard')}`}>
           <Home size={18} /> Dashboard
         </Link>
