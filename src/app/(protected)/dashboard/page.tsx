@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { HiveCard } from '@/components/hives/hive-card'
+import { AddHiveDialog } from '@/components/hives/add-hive-dialog'
 import type { Location, Hive, Inspection } from '@/lib/types'
 
 export default async function DashboardPage() {
@@ -28,7 +29,10 @@ export default async function DashboardPage() {
       <h1 className="text-xl font-semibold">Dashboard</h1>
       {typedLocations?.map(loc => (
         <div key={loc.id}>
-          <h2 className="font-medium text-muted-foreground mb-2">{loc.name}</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-medium text-muted-foreground">{loc.name}</h2>
+            <AddHiveDialog locationId={loc.id} />
+          </div>
           <div className="space-y-2">
             {loc.hives.map(hive => (
               <HiveCard key={hive.id} hive={hive} lastInspection={lastByHive[hive.id] ?? null} />
