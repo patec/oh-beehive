@@ -83,3 +83,33 @@ export type NotificationInsert = Pick<Notification, 'user_id' | 'type' | 'messag
   hive_id?: string | null
 }
 export type NotificationUpdate = { read: boolean }
+
+export type VoiceSessionStatus = 'processing' | 'review' | 'saved' | 'failed'
+
+export type ParsedInspection = {
+  hiveId: string | null
+  hiveName: string
+  transcriptExcerpt: string
+  queen_seen: boolean | null
+  brood_pattern: BroodPattern | null
+  population: Population | null
+  temperament: Temperament | null
+  honey_stores: HoneyStores | null
+  notes: string | null
+  next_action: string | null
+}
+
+export type VoiceSession = {
+  id: string
+  user_id: string
+  audio_path: string
+  duration_seconds: number | null
+  transcript: string | null
+  parsed_data: ParsedInspection[] | null
+  status: VoiceSessionStatus
+  error: string | null
+  created_at: string
+}
+export type VoiceSessionInsert = Pick<VoiceSession, 'user_id' | 'audio_path'> & {
+  duration_seconds?: number | null
+}
