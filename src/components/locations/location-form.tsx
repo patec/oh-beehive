@@ -1,5 +1,5 @@
 'use client'
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
 import { createLocation, updateLocation } from '@/lib/actions/locations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,6 +14,12 @@ export function LocationForm({ location, onSuccess }: { location?: Location; onS
     ? (updateLocation as (state: ActionState, formData: FormData) => Promise<ActionState>)
     : (createLocation as (state: ActionState, formData: FormData) => Promise<ActionState>)
   const [state, formAction, pending] = useActionState(action, undefined)
+
+  useEffect(() => {
+    // state is {} (no error) after a successful submission
+    if (state !== undefined && !state?.error && !pending) onSuccess?.()
+  }, [state, pending, onSuccess])
+
   return (
     <form action={formAction} className="space-y-4">
       {location && <input type="hidden" name="id" value={location.id} />}
