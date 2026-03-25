@@ -1,0 +1,65 @@
+import { notFound } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { HiveDetailTabs } from '@/components/hives/hive-detail-tabs'
+import { AutoOpenInspectionDialog } from '@/components/hives/auto-open-inspection-dialog'
+import { HarvestForm } from '@/components/harvests/harvest-form'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import type { Hive, Inspection, Harvest, InspectionPhoto } from '@/lib/types'
+
+type InspectionWithPhotos = Inspection & { inspection_photos: InspectionPhoto[] }
+
+export default async function HiveDetailPage({ params }: { params: Promise<{ hiveId: string }> }) {
+  const { hiveId } = await params
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const { data: hiveRaw } = await (supabase.from('hives').select('*').eq('id', hiveId).single() as unknown as Promise<{ data: Hive | null }>)
+  // RLS returns null for private hives when unauthenticated
+  if (!hiveRaw) notFound()
+  const hive = hiveRaw
+  if (!hive.is_public && hive.user_id !== user?.id) notFound()
+
+  const isOwner = user?.id === hive.user_id
+
+  const [{ data: inspectionsRaw }, { data: harvestsRaw }] = await Promise.all([
+    supabase.from('inspections').select('*, inspection_photos(*)').eq('hive_id', hive.id).order('inspected_at', { ascending: false }) as unknown as Promise<{ data: InspectionWithPhotos[] | null }>,
+    supabase.from('harvests').select('*').eq('hive_id', hive.id).order('harvested_at', { ascending: false }) as unknown as Promise<{ data: Harvest[] | null }>,
+  ])
+
+  const inspections = inspectionsRaw ?? []
+  const harvests = harvestsRaw ?? []
+  const totalHarvestKg = harvests.reduce((sum, h) => sum + Number(h.weight_kg), 0)
+
+  return (
+    <div className="p-4 max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">{hive.name}</h1>
+          <p className="text-sm text-muted-foreground capitalize">
+            {hive.status}{hive.species ? ` \u00b7 ${hive.species}` : ''}
+          </p>
+        </div>
+        {isOwner && (
+          <div className="flex gap-2">
+            <AutoOpenInspectionDialog hiveId={hive.id} />
+            <Dialog>
+              <DialogTrigger render={<Button size="sm" variant="outline" />}>+ Harvest</DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Log harvest</DialogTitle></DialogHeader>
+                <HarvestForm hiveId={hive.id} />
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
+      </div>
+      <HiveDetailTabs
+        inspections={inspections}
+        harvests={harvests}
+        hiveId={hive.id}
+        totalHarvestKg={totalHarvestKg}
+        isOwner={isOwner}
+      />
+    </div>
+  )
+}
