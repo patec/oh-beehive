@@ -20,8 +20,8 @@ export function DesktopSidebar({ unreadCount }: { unreadCount: number }) {
   return (
     <>
       <aside className="hidden md:flex flex-col w-60 border-r h-screen sticky top-0 p-4 gap-1 bg-background">
-        <div className="mb-5 px-1 flex items-center gap-3">
-          <Image src="/oh-beehive.jpg" alt="Oh Beehive" width={44} height={44} className="rounded-xl" />
+        <div className="mb-5 px-1 flex flex-col items-center text-center gap-2">
+          <Image src="/oh-beehive.jpg" alt="Oh Beehive" width={140} height={140} className="rounded-2xl shadow-sm" />
           <div>
             <span className="text-lg font-black text-amber-500 tracking-tight leading-none block">Oh Beehive!</span>
             <span className="text-xs text-muted-foreground">Yeah, baby!</span>
