@@ -1,0 +1,21 @@
+'use client'
+import { useState } from 'react'
+import { Mic } from 'lucide-react'
+import { RecordingOverlay } from './recording-overlay'
+
+export function RecordButton() {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-amber-500 text-white shadow-lg hover:bg-amber-600 active:scale-95 transition-all flex items-center justify-center md:bottom-8"
+        aria-label="Start voice inspection"
+        title="Voice inspection"
+      >
+        <Mic size={24} />
+      </button>
+      {open && <RecordingOverlay onClose={() => setOpen(false)} />}
+    </>
+  )
+}
