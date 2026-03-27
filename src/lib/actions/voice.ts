@@ -70,6 +70,7 @@ export async function saveVoiceSession(
     .filter(i => i.hiveId !== null)
     .map(i => ({
       hive_id: i.hiveId!,
+      user_id: user.id,
       queen_seen: i.queen_seen ?? undefined,
       brood_pattern: i.brood_pattern ?? undefined,
       population: i.population ?? undefined,
