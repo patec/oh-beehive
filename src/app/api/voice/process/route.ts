@@ -107,8 +107,9 @@ Return ONLY a valid JSON array — no markdown fences, no explanation.`,
       messages: [{ role: 'user', content: transcript }],
     })
 
-    const raw = message.content[0].type === 'text' ? message.content[0].text.trim() : '[]'
-    console.log('[voice/process] claude raw response=%s', raw)
+    const rawText = message.content[0].type === 'text' ? message.content[0].text.trim() : '[]'
+    console.log('[voice/process] claude raw response=%s', rawText)
+    const raw = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
 
     let parsed: ParsedInspection[]
     try {
