@@ -1,10 +1,19 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { Mic } from 'lucide-react'
 import { RecordingOverlay } from './recording-overlay'
 
 export function RecordButton() {
   const [open, setOpen] = useState(false)
+  const pathname = usePathname()
+
+  // Close the overlay when navigation completes so the overlay stays visible
+  // through the transition and the underlying page never flashes.
+  useEffect(() => {
+    if (open) setOpen(false)
+  }, [pathname])
+
   return (
     <>
       <button

@@ -90,7 +90,9 @@ describe('RecordingOverlay', () => {
     })
 
     expect(mockPush).toHaveBeenCalledWith('/voice-sessions/session-abc/review')
-    expect(onClose).toHaveBeenCalledOnce()
+    // onClose is no longer called by the overlay on success — RecordButton
+    // watches pathname and closes the overlay after navigation completes.
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('shows error and does not navigate when the processing API returns an error', async () => {
