@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
-import type { ParsedInspection, Hive } from '@/lib/types'
+import { parseClaudeResponse } from '@/lib/voice/parse-claude-response'
+import type { Hive } from '@/lib/types'
 
 export const maxDuration = 120
 
@@ -107,21 +108,9 @@ Return ONLY a valid JSON array — no markdown fences, no explanation.`,
       messages: [{ role: 'user', content: transcript }],
     })
 
-    const rawText = message.content[0].type === 'text' ? message.content[0].text.trim() : '[]'
+    const rawText = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
     console.log('[voice/process] claude raw response=%s', rawText)
-    const raw = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
-
-    let parsed: ParsedInspection[]
-    try {
-      parsed = JSON.parse(raw) as ParsedInspection[]
-      if (!Array.isArray(parsed)) {
-        console.log('[voice/process] claude response was not an array, got type=%s', typeof parsed)
-        parsed = []
-      }
-    } catch (parseErr) {
-      console.log('[voice/process] failed to parse claude response as JSON error=%s', parseErr instanceof Error ? parseErr.message : String(parseErr))
-      parsed = []
-    }
+    const parsed = parseClaudeResponse(rawText)
     console.log('[voice/process] parsed segments=%d', parsed.length)
 
     await (supabase
