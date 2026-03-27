@@ -9,15 +9,17 @@ export default async function LocationDetailPage({ params }: { params: Promise<{
   const { locationId } = await params
   const supabase = await createClient()
 
-  const { data: location } = await supabase
+  type LocationWithHives = { id: string; name: string; description: string | null; hives: Hive[] }
+
+  const { data: location } = await (supabase
     .from('locations')
     .select('id, name, description, hives(*)')
     .eq('id', locationId)
-    .single()
+    .single() as unknown as Promise<{ data: LocationWithHives | null }>)
 
   if (!location) notFound()
 
-  const hives = (location.hives as Hive[]) ?? []
+  const hives = location.hives ?? []
   const hiveIds = hives.map(h => h.id)
 
   type InspectionRow = Pick<Inspection, 'hive_id' | 'inspected_at'>
