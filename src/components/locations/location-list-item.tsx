@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
@@ -18,10 +19,10 @@ export function LocationListItem({ location }: { location: Location }) {
 
   return (
     <li className="flex items-center justify-between p-3 border rounded-lg">
-      <div>
+      <Link href={`/locations/${location.id}`} className="hover:underline">
         <p className="font-medium">{location.name}</p>
         {location.description && <p className="text-sm text-muted-foreground">{location.description}</p>}
-      </div>
+      </Link>
       <div className="flex gap-2">
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogTrigger render={<Button variant="ghost" size="sm" />}>Edit</DialogTrigger>
