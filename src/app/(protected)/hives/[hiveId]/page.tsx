@@ -4,8 +4,7 @@ import { ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { HiveDetailTabs } from '@/components/hives/hive-detail-tabs'
 import { AutoOpenInspectionDialog } from '@/components/hives/auto-open-inspection-dialog'
-import { HarvestForm } from '@/components/harvests/harvest-form'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { AddHarvestDialog } from '@/components/harvests/add-harvest-dialog'
 import { Button } from '@/components/ui/button'
 import type { Hive, Location, InspectionWithPhotos, InspectionWithPhotosAndUrls, Harvest } from '@/lib/types'
 
@@ -72,13 +71,7 @@ export default async function HiveDetailPage({ params }: { params: Promise<{ hiv
         {isOwner && (
           <div className="flex gap-2">
             <AutoOpenInspectionDialog hiveId={hive.id} />
-            <Dialog>
-              <DialogTrigger render={<Button size="sm" variant="outline" />}>+ Harvest</DialogTrigger>
-              <DialogContent>
-                <DialogHeader><DialogTitle>Log harvest</DialogTitle></DialogHeader>
-                <HarvestForm hiveId={hive.id} />
-              </DialogContent>
-            </Dialog>
+            <AddHarvestDialog hiveId={hive.id} />
           </div>
         )}
       </div>
