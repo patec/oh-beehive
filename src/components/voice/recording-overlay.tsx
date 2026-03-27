@@ -100,6 +100,7 @@ export function RecordingOverlay({ onClose }: { onClose: () => void }) {
       }
 
       router.push(`/voice-sessions/${sessionId}/review`)
+      onClose()
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Something went wrong')
       setPhase('error')
