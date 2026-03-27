@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
       .join(', ')
 
     // 4. Parse with Claude
+    console.log('[voice/process] anthropic key prefix:', process.env.ANTHROPIC_API_KEY?.slice(0, 20))
     const message = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 4096,
