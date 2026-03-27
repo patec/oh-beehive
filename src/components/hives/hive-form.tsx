@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label'
 import type { Hive } from '@/lib/types'
 
 type ActionState = { error?: string } | undefined
+type SlimLocation = { id: string; name: string }
 
-export function HiveForm({ locationId, hive, onSuccess }: { locationId?: string; hive?: Hive; onSuccess?: () => void }) {
+export function HiveForm({ locationId, locations, hive, onSuccess }: { locationId?: string; locations?: SlimLocation[]; hive?: Hive; onSuccess?: () => void }) {
   const action = hive
     ? (updateHive as (state: ActionState, formData: FormData) => Promise<ActionState>)
     : (createHive as (state: ActionState, formData: FormData) => Promise<ActionState>)
@@ -21,6 +22,18 @@ export function HiveForm({ locationId, hive, onSuccess }: { locationId?: string;
   return (
     <form action={formAction} className="space-y-4">
       {locationId && <input type="hidden" name="location_id" value={locationId} />}
+      {!locationId && locations && (
+        <div className="space-y-2">
+          <Label htmlFor="location_id">Location</Label>
+          <select id="location_id" name="location_id" required
+            className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="">Select a location…</option>
+            {locations.map(loc => (
+              <option key={loc.id} value={loc.id}>{loc.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
       {hive && <input type="hidden" name="id" value={hive.id} />}
       {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
       <div className="space-y-2">

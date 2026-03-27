@@ -26,13 +26,18 @@ export default async function HivesPage() {
 
   const totalHives = typedLocations?.reduce((sum, l) => sum + l.hives.length, 0) ?? 0
 
+  const slimLocations = typedLocations?.map(l => ({ id: l.id, name: l.name })) ?? []
+
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">Hives</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {totalHives > 0 ? `${totalHives} hive${totalHives !== 1 ? 's' : ''} across ${typedLocations?.length ?? 0} location${(typedLocations?.length ?? 0) !== 1 ? 's' : ''}` : 'No hives yet, baby.'}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">Hives</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {totalHives > 0 ? `${totalHives} hive${totalHives !== 1 ? 's' : ''} across ${typedLocations?.length ?? 0} location${(typedLocations?.length ?? 0) !== 1 ? 's' : ''}` : 'No hives yet.'}
+          </p>
+        </div>
+        {slimLocations.length > 0 && <AddHiveDialog locations={slimLocations} />}
       </div>
       {typedLocations?.map(loc => (
         <div key={loc.id}>
@@ -40,7 +45,6 @@ export default async function HivesPage() {
             <Link href="/locations" className="font-medium text-muted-foreground hover:text-foreground transition-colors">
               {loc.name}
             </Link>
-            <AddHiveDialog locationId={loc.id} />
           </div>
           <div className="space-y-2">
             {loc.hives.map(hive => (

@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { HiveForm } from './hive-form'
 
-export function AddHiveDialog({ locationId }: { locationId: string }) {
+type SlimLocation = { id: string; name: string }
+
+export function AddHiveDialog({ locationId, locations }: { locationId?: string; locations?: SlimLocation[] }) {
   const [open, setOpen] = useState(false)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -14,7 +16,7 @@ export function AddHiveDialog({ locationId }: { locationId: string }) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>New hive</DialogTitle></DialogHeader>
-        <HiveForm locationId={locationId} onSuccess={() => setOpen(false)} />
+        <HiveForm locationId={locationId} locations={locations} onSuccess={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   )
