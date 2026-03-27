@@ -25,6 +25,8 @@ export async function POST(req: NextRequest) {
 
   if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
 
+  console.log('[voice/process] start sessionId=%s userId=%s audioPath=%s', sessionId, user.id, session.audio_path)
+
   try {
     // 1. Get signed URL and download audio
     const { data: urlData } = await supabase.storage
@@ -45,15 +47,18 @@ export async function POST(req: NextRequest) {
       mp3: 'audio/mpeg',
     }
     const mimeType = mimeMap[ext] ?? 'audio/webm'
+    console.log('[voice/process] audio downloaded ext=%s mimeType=%s bytes=%d', ext, mimeType, audioBuffer.byteLength)
     const audioFile = new File([audioBuffer], `recording.${ext}`, { type: mimeType })
 
     // 2. Transcribe with Whisper
+    console.log('[voice/process] sending to Whisper')
     const transcription = await openai.audio.transcriptions.create({
       file: audioFile,
       model: 'whisper-1',
       language: 'en',
     })
     const transcript = transcription.text
+    console.log('[voice/process] transcript chars=%d text=%s', transcript.length, transcript)
 
     await (supabase
       .from('voice_sessions')
@@ -70,9 +75,10 @@ export async function POST(req: NextRequest) {
     const hiveList = (hives ?? [])
       .map(h => `{"id":"${h.id}","name":"${h.name}"}`)
       .join(', ')
+    console.log('[voice/process] hives found=%d list=%s', (hives ?? []).length, hiveList)
 
     // 4. Parse with Claude
-    console.log('[voice/process] anthropic key prefix:', process.env.ANTHROPIC_API_KEY?.slice(0, 20))
+    console.log('[voice/process] sending to Claude model=claude-haiku-4-5-20251001')
     const message = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 4096,
@@ -80,11 +86,12 @@ export async function POST(req: NextRequest) {
 
 The beekeeper's active hives are: [${hiveList}]
 
-Parse the transcript and return a JSON array — one object per hive mentioned.
+Parse the transcript and return a JSON array — one object per hive or location mentioned.
+IMPORTANT: Always return at least one object if the transcript contains any apiary observations, even if the hive list is empty or no names match. Never return an empty array when the beekeeper has described observations.
 Each object must have exactly these fields:
 {
   "hiveId": "<matching id from the hive list, or null if unrecognised>",
-  "hiveName": "<name as spoken>",
+  "hiveName": "<name as spoken, or 'Unknown hive' if no name given>",
   "transcriptExcerpt": "<the relevant portion of transcript for this hive>",
   "queen_seen": <true|false|null>,
   "brood_pattern": <"good"|"fair"|"poor"|null>,
@@ -101,22 +108,31 @@ Return ONLY a valid JSON array — no markdown fences, no explanation.`,
     })
 
     const raw = message.content[0].type === 'text' ? message.content[0].text.trim() : '[]'
+    console.log('[voice/process] claude raw response=%s', raw)
+
     let parsed: ParsedInspection[]
     try {
       parsed = JSON.parse(raw) as ParsedInspection[]
-      if (!Array.isArray(parsed)) parsed = []
-    } catch {
+      if (!Array.isArray(parsed)) {
+        console.log('[voice/process] claude response was not an array, got type=%s', typeof parsed)
+        parsed = []
+      }
+    } catch (parseErr) {
+      console.log('[voice/process] failed to parse claude response as JSON error=%s', parseErr instanceof Error ? parseErr.message : String(parseErr))
       parsed = []
     }
+    console.log('[voice/process] parsed segments=%d', parsed.length)
 
     await (supabase
       .from('voice_sessions')
       .update({ parsed_data: parsed as unknown as Record<string, unknown>[], status: 'review' } as never)
       .eq('id', sessionId) as unknown as Promise<unknown>)
 
+    console.log('[voice/process] complete sessionId=%s segments=%d', sessionId, parsed.length)
     return NextResponse.json({ status: 'review', sessionId })
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Processing failed'
+    console.error('[voice/process] error sessionId=%s error=%s', sessionId, msg, err)
     await (supabase
       .from('voice_sessions')
       .update({ status: 'failed', error: msg } as never)
