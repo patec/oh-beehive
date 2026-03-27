@@ -9,7 +9,10 @@ build: ## Build production bundle
 dev: ## Start development server (run manually: make dev)
 	@echo "Run: npm run dev"
 
-test: ## Run all tests
+typecheck: ## Run TypeScript type checker
+	npx tsc --noEmit
+
+test: typecheck ## Run type check then all tests
 	npx vitest run --passWithNoTests
 
 run-tests: test ## Alias for test
