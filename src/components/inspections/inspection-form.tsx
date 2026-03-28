@@ -28,7 +28,7 @@ export function InspectionForm({ hiveId, inspection, onSuccess }: Props) {
   }, [state, pending, onSuccess])
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form action={formAction} className="space-y-5 pb-20 md:pb-0">
       <input type="hidden" name="hive_id" value={hiveId} />
       {inspection && <input type="hidden" name="id" value={inspection.id} />}
       {state?.error && <p className="text-sm text-destructive">{state.error}</p>}

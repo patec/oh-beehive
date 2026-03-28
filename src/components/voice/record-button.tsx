@@ -18,7 +18,7 @@ export function RecordButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-amber-500 text-white shadow-lg hover:bg-amber-600 active:scale-95 transition-all flex items-center justify-center md:bottom-8"
+        className="fixed bottom-24 right-4 z-[60] w-14 h-14 rounded-full bg-amber-500 text-white shadow-lg hover:bg-amber-600 active:scale-95 transition-all flex items-center justify-center md:bottom-8"
         aria-label="Start voice inspection"
         title="Voice inspection"
       >

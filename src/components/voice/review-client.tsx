@@ -254,6 +254,7 @@ export function ReviewClient({
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveDragId(event.active.id as string)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
 
   async function handleSave() {
@@ -277,13 +278,24 @@ export function ReviewClient({
   const totalInspections = Object.values(assignedMap).reduce((n, arr) => n + arr.length, 0)
 
   return (
-    <div className="p-4 max-w-2xl mx-auto space-y-6 pb-32">
+    <div className="p-4 max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-black text-amber-800">Review Voice Inspection</h1>
         <p className="text-sm text-muted-foreground font-semibold">
           Check the parsed results, fix anything that&apos;s off, then save.
         </p>
       </div>
+      <Button
+        className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-6 text-lg shadow-lg"
+        onClick={handleSave}
+        disabled={saving || totalInspections === 0}
+      >
+        {saving
+          ? 'Saving...'
+          : totalInspections === 0
+          ? 'Assign inspections to hives to save'
+          : <><Check size={20} className="mr-2" /> Save {totalInspections} inspection{totalInspections !== 1 ? 's' : ''}</>}
+      </Button>
 
       {audioUrl && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-1">
@@ -342,19 +354,6 @@ export function ReviewClient({
         </DragOverlay>
       </DndContext>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t md:relative md:bottom-auto md:bg-transparent md:border-0 md:backdrop-blur-none md:p-0">
-        <Button
-          className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-6 text-lg shadow-lg"
-          onClick={handleSave}
-          disabled={saving || totalInspections === 0}
-        >
-          {saving
-            ? 'Saving...'
-            : totalInspections === 0
-            ? 'Assign inspections to hives to save'
-            : <><Check size={20} className="mr-2" /> Save {totalInspections} inspection{totalInspections !== 1 ? 's' : ''}</>}
-        </Button>
-      </div>
     </div>
   )
 }

@@ -11,6 +11,7 @@ import {
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
 import { LocationForm } from './location-form'
+import { AddHiveDialog } from '@/components/hives/add-hive-dialog'
 import { deleteLocation } from '@/lib/actions/locations'
 import type { Location } from '@/lib/types'
 
@@ -24,6 +25,7 @@ export function LocationListItem({ location }: { location: Location }) {
         {location.description && <p className="text-sm text-muted-foreground">{location.description}</p>}
       </Link>
       <div className="flex gap-2">
+        <AddHiveDialog locationId={location.id} />
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogTrigger render={<Button variant="ghost" size="sm" />}>Edit</DialogTrigger>
           <DialogContent>

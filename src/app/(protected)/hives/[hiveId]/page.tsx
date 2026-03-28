@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { HiveDetailTabs } from '@/components/hives/hive-detail-tabs'
 import { AutoOpenInspectionDialog } from '@/components/hives/auto-open-inspection-dialog'
 import { AddHarvestDialog } from '@/components/harvests/add-harvest-dialog'
+import { EditHiveDialog } from '@/components/hives/edit-hive-dialog'
 import { Button } from '@/components/ui/button'
 import type { Hive, Location, InspectionWithPhotos, InspectionWithPhotosAndUrls, Harvest } from '@/lib/types'
 
@@ -72,6 +73,7 @@ export default async function HiveDetailPage({ params }: { params: Promise<{ hiv
           <div className="flex gap-2">
             <AutoOpenInspectionDialog hiveId={hive.id} />
             <AddHarvestDialog hiveId={hive.id} />
+            <EditHiveDialog hive={hive} />
           </div>
         )}
       </div>

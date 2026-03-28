@@ -41,8 +41,8 @@ export function HiveForm({ locationId, locations, hive, onSuccess }: { locationI
         <Input id="name" name="name" defaultValue={hive?.name} required />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="species">Species (optional)</Label>
-        <Input id="species" name="species" defaultValue={hive?.species ?? ''} />
+        <Label htmlFor="genetics">Genetics (optional)</Label>
+        <Input id="genetics" name="species" defaultValue={hive?.species ?? ''} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="installed_at">Installation date (optional)</Label>
