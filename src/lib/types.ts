@@ -10,6 +10,7 @@ export type Database = {
       inspections: { Row: Inspection; Insert: InspectionInsert; Update: InspectionUpdate }
       inspection_photos: { Row: InspectionPhoto; Insert: InspectionPhotoInsert; Update: InspectionPhotoUpdate }
       notifications: { Row: Notification; Insert: NotificationInsert; Update: NotificationUpdate }
+      reminders: { Row: Reminder; Insert: ReminderInsert; Update: ReminderUpdate }
     }
   }
 }
@@ -83,6 +84,15 @@ export type NotificationInsert = Pick<Notification, 'user_id' | 'type' | 'messag
   hive_id?: string | null
 }
 export type NotificationUpdate = { read: boolean }
+
+export type Reminder = {
+  id: string; user_id: string; hive_id: string | null
+  title: string; due_date: string; completed: boolean; created_at: string
+}
+export type ReminderInsert = Pick<Reminder, 'title' | 'due_date'> & {
+  hive_id?: string | null
+}
+export type ReminderUpdate = Partial<Pick<Reminder, 'title' | 'due_date' | 'completed'>>
 
 export type VoiceSessionStatus = 'processing' | 'review' | 'saved' | 'failed'
 
