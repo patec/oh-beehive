@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, MapPin, Plus, Bell, User } from 'lucide-react'
+import { Home, MapPin, Plus, Bell, User, Calendar } from 'lucide-react'
 import { useState } from 'react'
 import { HivePickerModal } from '@/components/hives/hive-picker-modal'
 
@@ -17,8 +17,8 @@ export function MobileNav({ unreadCount }: { unreadCount: number }) {
         <Link href="/dashboard" className={`flex flex-col items-center py-2 text-xs gap-1 ${active('/dashboard')}`}>
           <Home size={22} /><span>Home</span>
         </Link>
-        <Link href="/locations" className={`flex flex-col items-center py-2 text-xs gap-1 ${active('/locations')}`}>
-          <MapPin size={22} /><span>Locations</span>
+        <Link href="/reminders" className={`flex flex-col items-center py-2 text-xs gap-1 ${active('/reminders')}`}>
+          <Calendar size={22} /><span>Reminders</span>
         </Link>
         <button
           onClick={() => setPickerOpen(true)}
