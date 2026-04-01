@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseReminderFields } from '@/lib/actions/reminders'
+import { parseReminderFields } from '@/lib/reminders-helpers'
 
 describe('parseReminderFields', () => {
   it('returns null when title is empty', () => {

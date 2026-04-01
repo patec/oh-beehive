@@ -1,7 +1,8 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { parseReminderFields, createReminderForHive } from '@/lib/actions/reminders'
+import { parseReminderFields } from '@/lib/reminders-helpers'
+import { createReminderForHive } from '@/lib/actions/reminders'
 
 export async function createInspection(_: { error?: string }, formData: FormData) {
   const supabase = await createClient()

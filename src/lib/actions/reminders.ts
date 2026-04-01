@@ -1,17 +1,8 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { parseReminderFields } from '@/lib/reminders-helpers'
 import type { ReminderInsert } from '@/lib/types'
-
-// Pure helper — exported for unit testing.
-export function parseReminderFields(
-  formData: FormData,
-): { title: string; due_date: string } | null {
-  const title = (formData.get('reminder_title') as string | null)?.trim() ?? ''
-  const due_date = (formData.get('reminder_due_date') as string | null)?.trim() ?? ''
-  if (!title || !due_date) return null
-  return { title, due_date }
-}
 
 export async function createReminder(
   _: { error?: string } | undefined,
