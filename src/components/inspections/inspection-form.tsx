@@ -17,6 +17,7 @@ export function InspectionForm({ hiveId, inspection, onSuccess }: Props) {
     ? (updateInspection as (state: ActionState, formData: FormData) => Promise<ActionState>)
     : (createInspection as (state: ActionState, formData: FormData) => Promise<ActionState>)
   const [state, formAction, pending] = useActionState(action, undefined)
+  const [addReminder, setAddReminder] = useState(false)
   const [queenSeen, setQueenSeen] = useState<boolean | null>(inspection?.queen_seen ?? null)
   const [broodPattern, setBroodPattern] = useState<string | null>(inspection?.brood_pattern ?? null)
   const [population, setPopulation] = useState<string | null>(inspection?.population ?? null)
@@ -77,6 +78,32 @@ export function InspectionForm({ hiveId, inspection, onSuccess }: Props) {
           <p className="text-xs text-muted-foreground">
             Upload new photos to add them. To remove existing photos, use the delete button on each photo below.
           </p>
+        )}
+      </div>
+
+      <div className="space-y-2 border rounded-xl p-3 bg-amber-50/50">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="add_reminder"
+            checked={addReminder}
+            onChange={e => setAddReminder(e.target.checked)}
+            className="rounded"
+          />
+          <Label htmlFor="add_reminder" className="cursor-pointer">Schedule a follow-up reminder</Label>
+        </div>
+        {addReminder && (
+          <div className="space-y-3 pt-1">
+            <div className="space-y-1">
+              <Label htmlFor="reminder_title">Reminder title</Label>
+              <Input id="reminder_title" name="reminder_title" placeholder="e.g. Check queen cells" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="reminder_due_date">Due date</Label>
+              <Input id="reminder_due_date" name="reminder_due_date" type="date"
+                defaultValue={new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10)} />
+            </div>
+          </div>
         )}
       </div>
 

@@ -1,6 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { parseReminderFields, createReminderForHive } from '@/lib/actions/reminders'
 
 export async function createInspection(_: { error?: string }, formData: FormData) {
   const supabase = await createClient()
@@ -25,6 +26,11 @@ export async function createInspection(_: { error?: string }, formData: FormData
 
   if (error) return { error: error.message }
 
+  const reminderFields = parseReminderFields(formData)
+  if (reminderFields) {
+    await createReminderForHive(hiveId, user.id, reminderFields.title, reminderFields.due_date)
+  }
+
   // Upload photos (max 5, max 5 MB each, JPEG/PNG/HEIC only)
   const photos = formData.getAll('photos') as File[]
   const allowedTypes = ['image/jpeg', 'image/png', 'image/heic']
@@ -43,6 +49,7 @@ export async function createInspection(_: { error?: string }, formData: FormData
   }
 
   revalidatePath(`/hives/${hiveId}`)
+  revalidatePath('/reminders')
   const skippedCount = photos.filter(f => f.size > 0).length - validPhotos.length
   return skippedCount > 0 ? { warning: `${skippedCount} photo(s) were skipped (must be JPEG/PNG/HEIC, max 5 MB each).` } : {}
 }
