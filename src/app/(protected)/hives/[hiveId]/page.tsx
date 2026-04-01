@@ -7,7 +7,7 @@ import { AutoOpenInspectionDialog } from '@/components/hives/auto-open-inspectio
 import { AddHarvestDialog } from '@/components/harvests/add-harvest-dialog'
 import { EditHiveDialog } from '@/components/hives/edit-hive-dialog'
 import { Button } from '@/components/ui/button'
-import type { Hive, Location, InspectionWithPhotos, InspectionWithPhotosAndUrls, Harvest } from '@/lib/types'
+import type { Hive, Location, InspectionWithPhotos, InspectionWithPhotosAndUrls, Harvest, Reminder } from '@/lib/types'
 
 export default async function HiveDetailPage({ params }: { params: Promise<{ hiveId: string }> }) {
   const { hiveId } = await params
@@ -23,9 +23,10 @@ export default async function HiveDetailPage({ params }: { params: Promise<{ hiv
 
   const isOwner = user?.id === hive.user_id
 
-  const [{ data: inspectionsRaw }, { data: harvestsRaw }] = await Promise.all([
+  const [{ data: inspectionsRaw }, { data: harvestsRaw }, { data: remindersRaw }] = await Promise.all([
     supabase.from('inspections').select('*, inspection_photos(*)').eq('hive_id', hive.id).order('inspected_at', { ascending: false }) as unknown as Promise<{ data: InspectionWithPhotos[] | null }>,
     supabase.from('harvests').select('*').eq('hive_id', hive.id).order('harvested_at', { ascending: false }) as unknown as Promise<{ data: Harvest[] | null }>,
+    (supabase.from('reminders') as any).select('*').eq('hive_id', hive.id).eq('completed', false).order('due_date', { ascending: true }) as unknown as Promise<{ data: Reminder[] | null }>,
   ])
 
   // Generate signed URLs for all photos in one batch
@@ -47,6 +48,7 @@ export default async function HiveDetailPage({ params }: { params: Promise<{ hiv
   }))
 
   const harvests = harvestsRaw ?? []
+  const reminders = remindersRaw ?? []
   const totalHarvestKg = harvests.reduce((sum, h) => sum + Number(h.weight_kg), 0)
 
   return (
@@ -80,6 +82,7 @@ export default async function HiveDetailPage({ params }: { params: Promise<{ hiv
       <HiveDetailTabs
         inspections={inspections}
         harvests={harvests}
+        reminders={reminders}
         hiveId={hive.id}
         totalHarvestKg={totalHarvestKg}
         isOwner={isOwner}
