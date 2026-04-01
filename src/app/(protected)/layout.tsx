@@ -1,14 +1,17 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { AppShell } from '@/components/layout/app-shell'
-import { triggerOverdueNotifications } from '@/lib/actions/notifications'
+import { triggerOverdueNotifications, triggerReminderNotifications } from '@/lib/actions/notifications'
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  await triggerOverdueNotifications(user.id)
+  await Promise.all([
+    triggerOverdueNotifications(user.id),
+    triggerReminderNotifications(user.id),
+  ])
 
   const { count } = await supabase
     .from('notifications')

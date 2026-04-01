@@ -57,6 +57,39 @@ export async function triggerOverdueNotifications(userId: string) {
   }
 }
 
+export async function triggerReminderNotifications(userId: string) {
+  const supabase = await createClient()
+  const admin = createAdminClient()
+  const today = new Date().toISOString().slice(0, 10)
+  const dedupCutoff = new Date(Date.now() - DEDUP_HOURS * 3600000).toISOString()
+
+  const { data: dueReminders } = await (supabase.from('reminders') as any)
+    .select('id, hive_id, title')
+    .eq('user_id', userId)
+    .eq('completed', false)
+    .lte('due_date', today) as { data: Array<{ id: string; hive_id: string | null; title: string }> | null }
+
+  for (const reminder of dueReminders ?? []) {
+    const { data: existing } = await (supabase.from('notifications') as any)
+      .select('id')
+      .eq('user_id', userId)
+      .eq('type', 'reminder_due')
+      .eq('message', `Reminder: ${reminder.title}`)
+      .gte('created_at', dedupCutoff)
+      .limit(1)
+      .single() as { data: { id: string } | null }
+
+    if (existing) continue
+
+    await (admin.from('notifications') as any).insert({
+      user_id: userId,
+      hive_id: reminder.hive_id,
+      type: 'reminder_due',
+      message: `Reminder: ${reminder.title}`,
+    })
+  }
+}
+
 export async function markNotificationRead(id: string) {
   const supabase = await createClient()
   await (supabase.from('notifications') as any).update({ read: true }).eq('id', id)
